@@ -280,10 +280,12 @@ class HtmlAudio {
         audio.addEventListener("canplaythrough", handleLoadSuccess);
         audio.addEventListener("error", handleErrorLoading);
 
-        // Set source after listeners are attached so no events are missed
-        audio.src = url;
+        // Set source after listeners are attached so no events are missed.
+        // Setting audio.src triggers the resource selection algorithm
+        // automatically — do NOT call audio.load() again as it aborts
+        // the in-progress load and fires a spurious error event.
         audio.preload = "auto";
-        audio.load();
+        audio.src = url;
       });
     } catch (error) {
       console.error("Audio load process error:", error);
