@@ -128,6 +128,7 @@ export default function SearchPage() {
                   podcastTitle={podcast?.title}
                   podcastImage={podcast?.image}
                   showPodcastName
+                  chapters={getChaptersByEpisodeId(episode.id)}
                   chapterCount={getChaptersByEpisodeId(episode.id).length}
                 />
               );

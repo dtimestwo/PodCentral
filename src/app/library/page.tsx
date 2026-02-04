@@ -85,6 +85,7 @@ export default function LibraryPage() {
                     podcastTitle={podcast?.title}
                     podcastImage={podcast?.image}
                     showPodcastName
+                    chapters={getChaptersByEpisodeId(episode.id)}
                     chapterCount={getChaptersByEpisodeId(episode.id).length}
                   />
                 );
@@ -115,6 +116,7 @@ export default function LibraryPage() {
                     podcastTitle={podcast?.title}
                     podcastImage={podcast?.image}
                     showPodcastName
+                    chapters={getChaptersByEpisodeId(episode.id)}
                     chapterCount={getChaptersByEpisodeId(episode.id).length}
                   />
                 );

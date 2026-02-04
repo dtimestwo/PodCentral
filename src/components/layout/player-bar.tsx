@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { ListMusicIcon, ChevronUpIcon } from "lucide-react";
 import { useAudioStore } from "@/lib/audio-store";
+import { useCurrentChapter } from "@/hooks/use-current-chapter";
 import {
   AudioPlayerControlBar,
   AudioPlayerControlGroup,
@@ -25,16 +26,17 @@ import {
 
 export function PlayerBar() {
   const currentTrack = useAudioStore((s) => s.currentTrack);
+  const { chapter, artwork } = useCurrentChapter();
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="flex h-20 items-center gap-4 px-4">
         {/* Left: Track info */}
         <div className="flex min-w-[200px] items-center gap-3">
-          {currentTrack?.artwork ? (
+          {artwork ? (
             <Image
-              src={currentTrack.artwork}
-              alt={currentTrack.title || ""}
+              src={artwork}
+              alt={chapter?.title || currentTrack?.title || ""}
               width={48}
               height={48}
               className="size-12 rounded-md object-cover"
@@ -47,7 +49,7 @@ export function PlayerBar() {
               {currentTrack?.title || "Nothing playing"}
             </p>
             <p className="truncate text-xs text-muted-foreground">
-              {currentTrack?.artist || "Select an episode to play"}
+              {chapter?.title || currentTrack?.artist || "Select an episode to play"}
             </p>
           </div>
         </div>

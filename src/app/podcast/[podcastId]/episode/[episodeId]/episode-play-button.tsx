@@ -4,6 +4,7 @@ import { PlayIcon, ZapIcon, MessageSquareIcon, ShareIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAudioStore } from "@/lib/audio-store";
+import type { Chapter } from "@/lib/types";
 
 export function EpisodePlayButton({
   episodeId,
@@ -12,6 +13,7 @@ export function EpisodePlayButton({
   artist,
   artwork,
   duration,
+  chapters,
 }: {
   episodeId: string;
   enclosureUrl: string;
@@ -19,12 +21,13 @@ export function EpisodePlayButton({
   artist: string;
   artwork: string;
   duration: number;
+  chapters?: Chapter[];
 }) {
   const setQueueAndPlay = useAudioStore((s) => s.setQueueAndPlay);
 
   const handlePlay = () => {
     setQueueAndPlay(
-      [{ id: episodeId, url: enclosureUrl, title, artist, artwork, duration }],
+      [{ id: episodeId, url: enclosureUrl, title, artist, artwork, duration, chapters }],
       0
     );
   };

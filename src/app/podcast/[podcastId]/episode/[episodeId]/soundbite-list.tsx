@@ -3,7 +3,7 @@
 import { PlayIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAudioStore } from "@/lib/audio-store";
-import type { Soundbite } from "@/lib/types";
+import type { Chapter, Soundbite } from "@/lib/types";
 import { formatDurationFromSeconds } from "@/lib/format";
 
 export function SoundbiteList({
@@ -14,6 +14,7 @@ export function SoundbiteList({
   artist,
   artwork,
   duration,
+  chapters,
 }: {
   soundbites: Soundbite[];
   episodeId: string;
@@ -22,6 +23,7 @@ export function SoundbiteList({
   artist: string;
   artwork: string;
   duration: number;
+  chapters?: Chapter[];
 }) {
   const setQueueAndPlay = useAudioStore((s) => s.setQueueAndPlay);
   const seek = useAudioStore((s) => s.seek);
@@ -33,7 +35,7 @@ export function SoundbiteList({
       seek(startTime);
     } else {
       setQueueAndPlay(
-        [{ id: episodeId, url: enclosureUrl, title, artist, artwork, duration }],
+        [{ id: episodeId, url: enclosureUrl, title, artist, artwork, duration, chapters }],
         0
       );
       setTimeout(() => seek(startTime), 500);

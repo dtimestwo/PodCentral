@@ -4,9 +4,9 @@ import { Episode } from "@/lib/types";
 const AUDIO_SAMPLES = [
   "https://cdn.pixabay.com/audio/2024/10/21/audio_78251ef8e3.mp3",
   "https://cdn.pixabay.com/audio/2024/02/28/audio_60f7a54400.mp3",
-  "https://cdn.pixabay.com/audio/2024/11/04/audio_4956b4aefd.mp3",
-  "https://cdn.pixabay.com/audio/2024/09/11/audio_27de9d7c8b.mp3",
-  "https://cdn.pixabay.com/audio/2024/08/27/audio_e1804e544d.mp3",
+  "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+  "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+  "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
 ];
 
 function audioUrl(index: number): string {

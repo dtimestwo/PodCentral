@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAudioStore } from "@/lib/audio-store";
-import type { Episode } from "@/lib/types";
+import type { Chapter, Episode } from "@/lib/types";
 import { formatDurationFromSeconds, formatDate } from "@/lib/format";
 import Link from "next/link";
 
@@ -16,12 +16,14 @@ export const EpisodeRow = memo(function EpisodeRow({
   podcastImage,
   showPodcastName = false,
   chapterCount = 0,
+  chapters,
 }: {
   episode: Episode;
   podcastTitle?: string;
   podcastImage?: string;
   showPodcastName?: boolean;
   chapterCount?: number;
+  chapters?: Chapter[];
 }) {
   const setQueueAndPlay = useAudioStore((s) => s.setQueueAndPlay);
   const addToQueue = useAudioStore((s) => s.addToQueue);
@@ -36,6 +38,7 @@ export const EpisodeRow = memo(function EpisodeRow({
           artist: podcastTitle || "",
           artwork: episode.image || podcastImage || "",
           duration: episode.duration,
+          chapters,
         },
       ],
       0
@@ -50,6 +53,7 @@ export const EpisodeRow = memo(function EpisodeRow({
       artist: podcastTitle || "",
       artwork: episode.image || podcastImage || "",
       duration: episode.duration,
+      chapters,
     });
   };
 

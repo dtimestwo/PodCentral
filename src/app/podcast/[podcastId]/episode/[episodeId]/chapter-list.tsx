@@ -32,7 +32,7 @@ export function ChapterList({
       seek(startTime);
     } else {
       setQueueAndPlay(
-        [{ id: episodeId, url: enclosureUrl, title, artist, artwork, duration }],
+        [{ id: episodeId, url: enclosureUrl, title, artist, artwork, duration, chapters }],
         0
       );
       // Seek after a short delay to allow the track to load

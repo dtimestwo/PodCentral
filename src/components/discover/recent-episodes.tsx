@@ -28,6 +28,7 @@ export function RecentEpisodes({
               podcastTitle={podcast?.title}
               podcastImage={podcast?.image}
               showPodcastName
+              chapters={getChaptersByEpisodeId(episode.id)}
               chapterCount={getChaptersByEpisodeId(episode.id).length}
             />
           );

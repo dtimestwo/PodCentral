@@ -41,6 +41,7 @@ export default async function EpisodePage({
     artist: podcast.title,
     artwork: episode.image || podcast.image,
     duration: episode.duration,
+    chapters,
   };
 
   return (
@@ -119,7 +120,7 @@ export default async function EpisodePage({
 
         {chapters.length > 0 && (
           <TabsContent value="chapters" className="mt-4">
-            <ChapterList chapters={chapters} {...trackProps} />
+            <ChapterList {...trackProps} />
           </TabsContent>
         )}
 

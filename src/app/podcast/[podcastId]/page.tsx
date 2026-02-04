@@ -124,6 +124,7 @@ export default async function PodcastPage({
                   episode={trailer}
                   podcastTitle={podcast.title}
                   podcastImage={podcast.image}
+                  chapters={getChaptersByEpisodeId(trailer.id)}
                   chapterCount={getChaptersByEpisodeId(trailer.id).length}
                 />
                 <Separator className="my-2" />
@@ -136,6 +137,7 @@ export default async function PodcastPage({
                   episode={episode}
                   podcastTitle={podcast.title}
                   podcastImage={podcast.image}
+                  chapters={getChaptersByEpisodeId(episode.id)}
                   chapterCount={getChaptersByEpisodeId(episode.id).length}
                 />
               ))}
