@@ -37,6 +37,7 @@ class HtmlAudio {
   private fadeTimeout: NodeJS.Timeout | null = null;
   private retryAttempts = 0;
   private readonly maxRetries = 3;
+  private loadingUrl: string | null = null;
   private readonly eventTarget = new EventTarget();
   private readonly LOAD_TIMEOUT_LIVE = 60_000;
   private readonly LOAD_TIMEOUT_NORMAL = 30_000;
@@ -67,7 +68,10 @@ class HtmlAudio {
     }
 
     audio.addEventListener("error", () => {
-      // Silent error handling - errors are handled via retry logic
+      // Skip errors during a source transition (handled by _load)
+      if (this.loadingUrl) {
+        return;
+      }
 
       if (this.retryAttempts < this.maxRetries) {
         this.retryAttempts += 1;
@@ -202,10 +206,7 @@ class HtmlAudio {
       }
 
       audio.pause();
-      audio.src = "";
-
-      audio.src = url;
-      audio.preload = "auto";
+      this.loadingUrl = url;
 
       const loadTimeout = isLiveStream
         ? this.LOAD_TIMEOUT_LIVE
@@ -216,6 +217,7 @@ class HtmlAudio {
         let isResolved = false;
 
         const cleanup = () => {
+          this.loadingUrl = null;
           if (timeoutId) {
             clearTimeout(timeoutId);
             timeoutId = null;
@@ -258,6 +260,10 @@ class HtmlAudio {
           if (isResolved) {
             return;
           }
+          // Ignore stale errors from a previous source
+          if (!audio.src || !audio.src.includes(url)) {
+            return;
+          }
           isResolved = true;
           cleanup();
           const error = audio.error;
@@ -273,6 +279,10 @@ class HtmlAudio {
         audio.addEventListener("canplay", handleLoadSuccess);
         audio.addEventListener("canplaythrough", handleLoadSuccess);
         audio.addEventListener("error", handleErrorLoading);
+
+        // Set source after listeners are attached so no events are missed
+        audio.src = url;
+        audio.preload = "auto";
         audio.load();
       });
     } catch (error) {
@@ -318,8 +328,6 @@ class HtmlAudio {
     const currentSrc = audio.src;
 
     audio.pause();
-    audio.src = "";
-    audio.load();
     audio.src = currentSrc;
     audio.preload = "auto";
     audio.load();
