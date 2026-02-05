@@ -15,7 +15,7 @@ export function RecentEpisodes({
   return (
     <section>
       <div className="mb-4 flex items-center gap-2">
-        <ClockIcon className="size-5 text-muted-foreground" />
+        <ClockIcon className="size-5 text-primary" />
         <h2 className="text-xl font-semibold">Recently Published</h2>
       </div>
       <div className="flex flex-col">

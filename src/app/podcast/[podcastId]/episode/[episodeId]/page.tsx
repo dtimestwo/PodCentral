@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ClockIcon } from "lucide-react";
+import { ClockIcon, ChevronDownIcon, ZapIcon } from "lucide-react";
 import { getEpisodeById } from "@/data/episodes";
 import { getPodcastById } from "@/data/podcasts";
 import { getChaptersByEpisodeId } from "@/data/chapters";
@@ -9,13 +9,17 @@ import { getTranscriptByEpisodeId } from "@/data/transcripts";
 import { getCommentsByEpisodeId } from "@/data/comments";
 import { getSoundbitesByEpisodeId } from "@/data/soundbites";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { PersonTag } from "@/components/podcast/person-tag";
 import { formatDurationFromSeconds, formatDate } from "@/lib/format";
 import { EpisodePlayButton } from "./episode-play-button";
 import { ChapterList } from "./chapter-list";
 import { SoundbiteList } from "./soundbite-list";
-import { ZapIcon } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 export default async function EpisodePage({
   params,
@@ -51,9 +55,9 @@ export default async function EpisodePage({
         <Image
           src={episode.image || podcast.image}
           alt={episode.title}
-          width={180}
-          height={180}
-          className="size-44 rounded-xl shadow-lg"
+          width={200}
+          height={200}
+          className="size-48 rounded-xl shadow-lg"
         />
         <div className="flex flex-col justify-end gap-2">
           <Link
@@ -88,48 +92,46 @@ export default async function EpisodePage({
         </div>
       )}
 
-      {/* Tabbed Content */}
-      <Tabs defaultValue="description">
-        <TabsList>
-          <TabsTrigger value="description">Description</TabsTrigger>
-          {chapters.length > 0 && (
-            <TabsTrigger value="chapters">
-              Chapters ({chapters.length})
-            </TabsTrigger>
-          )}
-          {transcript.length > 0 && (
-            <TabsTrigger value="transcript">Transcript</TabsTrigger>
-          )}
-          {comments.length > 0 && (
-            <TabsTrigger value="comments">
-              Comments ({comments.length})
-            </TabsTrigger>
-          )}
-          {soundbites.length > 0 && (
-            <TabsTrigger value="soundbites">
-              Soundbites ({soundbites.length})
-            </TabsTrigger>
-          )}
-        </TabsList>
+      {/* Description */}
+      <div>
+        <h2 className="mb-2 text-lg font-semibold">Description</h2>
+        <p className="max-w-2xl text-sm leading-relaxed">
+          {episode.description}
+        </p>
+      </div>
 
-        <TabsContent value="description" className="mt-4">
-          <p className="max-w-2xl text-sm leading-relaxed">
-            {episode.description}
-          </p>
-        </TabsContent>
+      {/* Chapters */}
+      {chapters.length > 0 && (
+        <div>
+          <h2 className="mb-2 text-lg font-semibold">
+            Chapters ({chapters.length})
+          </h2>
+          <ChapterList {...trackProps} />
+        </div>
+      )}
 
-        {chapters.length > 0 && (
-          <TabsContent value="chapters" className="mt-4">
-            <ChapterList {...trackProps} />
-          </TabsContent>
-        )}
+      {/* Soundbites */}
+      {soundbites.length > 0 && (
+        <div>
+          <h2 className="mb-2 text-lg font-semibold">
+            Soundbites ({soundbites.length})
+          </h2>
+          <SoundbiteList soundbites={soundbites} {...trackProps} />
+        </div>
+      )}
 
-        {transcript.length > 0 && (
-          <TabsContent value="transcript" className="mt-4">
-            <div className="flex max-w-2xl flex-col gap-3">
+      {/* Transcript — Collapsible */}
+      {transcript.length > 0 && (
+        <Collapsible>
+          <CollapsibleTrigger className="group flex w-full items-center justify-between py-2">
+            <h2 className="text-lg font-semibold">Transcript</h2>
+            <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="flex max-w-2xl flex-col gap-3 pt-2">
               {transcript.map((seg) => (
                 <div key={`${seg.startTime}-${seg.speaker}`} className="flex gap-3">
-                  <span className="min-w-16 text-xs font-mono text-muted-foreground">
+                  <span className="min-w-16 font-mono text-xs text-muted-foreground">
                     {formatDurationFromSeconds(seg.startTime)}
                   </span>
                   <div>
@@ -141,82 +143,81 @@ export default async function EpisodePage({
                 </div>
               ))}
             </div>
-          </TabsContent>
-        )}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
 
-        {comments.length > 0 && (
-          <TabsContent value="comments" className="mt-4">
-            <div className="flex max-w-2xl flex-col gap-4">
-              {comments.map((comment) => (
-                <div key={comment.id} className="flex gap-3">
-                  <Image
-                    src={comment.authorAvatar}
-                    alt={comment.author}
-                    width={32}
-                    height={32}
-                    className="size-8 rounded-full"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">
-                        {comment.author}
-                      </span>
-                      <Badge variant="outline" className="text-xs capitalize">
-                        {comment.platform}
+      {/* Comments */}
+      {comments.length > 0 && (
+        <div>
+          <Separator className="mb-4" />
+          <h2 className="mb-3 text-lg font-semibold">
+            Comments ({comments.length})
+          </h2>
+          <div className="flex max-w-2xl flex-col gap-4">
+            {comments.map((comment) => (
+              <div key={comment.id} className="flex gap-3">
+                <Image
+                  src={comment.authorAvatar}
+                  alt={comment.author}
+                  width={32}
+                  height={32}
+                  className="size-8 rounded-full"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">
+                      {comment.author}
+                    </span>
+                    <Badge variant="outline" className="text-xs capitalize">
+                      {comment.platform}
+                    </Badge>
+                    {comment.boostAmount && (
+                      <Badge
+                        variant="secondary"
+                        className="flex items-center gap-1 text-xs text-yellow-500"
+                      >
+                        <ZapIcon className="size-3" /> {comment.boostAmount}{" "}
+                        sats
                       </Badge>
-                      {comment.boostAmount && (
-                        <Badge
-                          variant="secondary"
-                          className="flex items-center gap-1 text-xs text-yellow-500"
-                        >
-                          <ZapIcon className="size-3" /> {comment.boostAmount}{" "}
-                          sats
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="mt-1 text-sm">{comment.text}</p>
-                    {comment.replies.length > 0 && (
-                      <div className="mt-3 flex flex-col gap-3 border-l-2 pl-4">
-                        {comment.replies.map((reply) => (
-                          <div key={reply.id} className="flex gap-3">
-                            <Image
-                              src={reply.authorAvatar}
-                              alt={reply.author}
-                              width={24}
-                              height={24}
-                              className="size-6 rounded-full"
-                            />
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-medium">
-                                  {reply.author}
-                                </span>
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs capitalize"
-                                >
-                                  {reply.platform}
-                                </Badge>
-                              </div>
-                              <p className="mt-0.5 text-sm">{reply.text}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
                     )}
                   </div>
+                  <p className="mt-1 text-sm">{comment.text}</p>
+                  {comment.replies.length > 0 && (
+                    <div className="mt-3 flex flex-col gap-3 border-l-2 pl-4">
+                      {comment.replies.map((reply) => (
+                        <div key={reply.id} className="flex gap-3">
+                          <Image
+                            src={reply.authorAvatar}
+                            alt={reply.author}
+                            width={24}
+                            height={24}
+                            className="size-6 rounded-full"
+                          />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium">
+                                {reply.author}
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className="text-xs capitalize"
+                              >
+                                {reply.platform}
+                              </Badge>
+                            </div>
+                            <p className="mt-0.5 text-sm">{reply.text}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          </TabsContent>
-        )}
-
-        {soundbites.length > 0 && (
-          <TabsContent value="soundbites" className="mt-4">
-            <SoundbiteList soundbites={soundbites} {...trackProps} />
-          </TabsContent>
-        )}
-      </Tabs>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

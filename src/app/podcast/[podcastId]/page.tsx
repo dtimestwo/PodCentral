@@ -6,17 +6,22 @@ import {
   MapPinIcon,
   ScaleIcon,
   ZapIcon,
+  ChevronDownIcon,
 } from "lucide-react";
 import { getPodcastById } from "@/data/podcasts";
 import { getEpisodesByPodcastId } from "@/data/episodes";
 import { persons } from "@/data/persons";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { EpisodeRow } from "@/components/podcast/episode-row";
 import { PersonTag } from "@/components/podcast/person-tag";
 import { SubscribeButton } from "./subscribe-button";
 import { getChaptersByEpisodeId } from "@/data/chapters";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 export default async function PodcastPage({
   params,
@@ -104,48 +109,45 @@ export default async function PodcastPage({
         </div>
       )}
 
-      {/* Tabs */}
+      {/* Episodes */}
+      <div className="px-6">
+        <h2 className="mb-3 text-lg font-semibold">Episodes</h2>
+        {trailer && (
+          <>
+            <EpisodeRow
+              key={trailer.id}
+              episode={trailer}
+              podcastTitle={podcast.title}
+              podcastImage={podcast.image}
+              chapters={getChaptersByEpisodeId(trailer.id)}
+              chapterCount={getChaptersByEpisodeId(trailer.id).length}
+            />
+            <Separator className="my-2" />
+          </>
+        )}
+        <div className="flex flex-col">
+          {regularEpisodes.map((episode) => (
+            <EpisodeRow
+              key={episode.id}
+              episode={episode}
+              podcastTitle={podcast.title}
+              podcastImage={podcast.image}
+              chapters={getChaptersByEpisodeId(episode.id)}
+              chapterCount={getChaptersByEpisodeId(episode.id).length}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* About — Collapsible */}
       <div className="px-6 pb-6">
-        <Tabs defaultValue="episodes">
-          <TabsList>
-            <TabsTrigger value="episodes">Episodes</TabsTrigger>
-            <TabsTrigger value="about">About</TabsTrigger>
-            {podcast.value && (
-              <TabsTrigger value="value">Value</TabsTrigger>
-            )}
-          </TabsList>
-
-          <TabsContent value="episodes" className="mt-4">
-            {/* Trailer pinned */}
-            {trailer && (
-              <>
-                <EpisodeRow
-                  key={trailer.id}
-                  episode={trailer}
-                  podcastTitle={podcast.title}
-                  podcastImage={podcast.image}
-                  chapters={getChaptersByEpisodeId(trailer.id)}
-                  chapterCount={getChaptersByEpisodeId(trailer.id).length}
-                />
-                <Separator className="my-2" />
-              </>
-            )}
-            <div className="flex flex-col">
-              {regularEpisodes.map((episode) => (
-                <EpisodeRow
-                  key={episode.id}
-                  episode={episode}
-                  podcastTitle={podcast.title}
-                  podcastImage={podcast.image}
-                  chapters={getChaptersByEpisodeId(episode.id)}
-                  chapterCount={getChaptersByEpisodeId(episode.id).length}
-                />
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="about" className="mt-4">
-            <div className="max-w-2xl space-y-4">
+        <Collapsible>
+          <CollapsibleTrigger className="group flex w-full items-center justify-between py-2">
+            <h2 className="text-lg font-semibold">About</h2>
+            <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="max-w-2xl space-y-4 pt-2">
               <p className="text-sm leading-relaxed">{podcast.description}</p>
               <Separator />
               <div className="grid grid-cols-2 gap-4 text-sm">
@@ -202,38 +204,40 @@ export default async function PodcastPage({
                   </div>
                 </>
               )}
-            </div>
-          </TabsContent>
 
-          {podcast.value && (
-            <TabsContent value="value" className="mt-4">
-              <div className="max-w-md space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  This podcast supports Value-for-Value via Lightning payments.
-                  When you stream or boost, your sats are split among:
-                </p>
-                <div className="flex flex-col gap-2">
-                  {podcast.value.recipients.map((r, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between rounded-lg border p-3"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="capitalize">
-                          {r.type}
-                        </Badge>
-                        <span className="text-sm font-medium">{r.name}</span>
-                      </div>
-                      <span className="text-sm font-mono font-semibold">
-                        {r.split}%
-                      </span>
+              {/* Value info inline */}
+              {podcast.value && (
+                <>
+                  <Separator />
+                  <div>
+                    <p className="mb-2 font-medium">Value Splits</p>
+                    <p className="mb-3 text-sm text-muted-foreground">
+                      This podcast supports Value-for-Value via Lightning payments.
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {podcast.value.recipients.map((r, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between rounded-lg border p-3"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="capitalize">
+                              {r.type}
+                            </Badge>
+                            <span className="text-sm font-medium">{r.name}</span>
+                          </div>
+                          <span className="font-mono text-sm font-semibold">
+                            {r.split}%
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            </TabsContent>
-          )}
-        </Tabs>
+                  </div>
+                </>
+              )}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
     </div>
   );

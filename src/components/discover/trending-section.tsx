@@ -7,7 +7,7 @@ export function TrendingSection({ podcasts }: { podcasts: Podcast[] }) {
   return (
     <section>
       <div className="mb-4 flex items-center gap-2">
-        <TrendingUpIcon className="size-5 text-muted-foreground" />
+        <TrendingUpIcon className="size-5 text-primary" />
         <h2 className="text-xl font-semibold">Trending</h2>
       </div>
       <ScrollArea className="w-full">
