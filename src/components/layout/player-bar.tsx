@@ -37,12 +37,12 @@ export function PlayerBar() {
             <Image
               src={artwork}
               alt={chapter?.title || currentTrack?.title || ""}
-              width={48}
-              height={48}
-              className="size-12 rounded-md object-cover"
+              width={56}
+              height={56}
+              className="size-14 rounded-lg object-cover"
             />
           ) : (
-            <div className="size-12 rounded-md bg-muted" />
+            <div className="size-14 rounded-lg bg-muted" />
           )}
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">
