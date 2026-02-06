@@ -110,7 +110,7 @@ export default async function PodcastPage({
       )}
 
       {/* Episodes */}
-      <div className="px-6">
+      <section className="px-6">
         <h2 className="mb-3 text-lg font-semibold">Episodes</h2>
         {trailer && (() => {
           const trailerChapters = getChaptersByEpisodeId(trailer.id);
@@ -142,11 +142,11 @@ export default async function PodcastPage({
             );
           })}
         </div>
-      </div>
+      </section>
 
       {/* About — Collapsible */}
-      <div className="px-6 pb-6">
-        <Collapsible>
+      <section className="px-6 pb-6">
+        <Collapsible defaultOpen>
           <CollapsibleTrigger className="group flex w-full items-center justify-between py-2">
             <h2 className="text-lg font-semibold">About</h2>
             <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
@@ -193,18 +193,22 @@ export default async function PodcastPage({
                   <div>
                     <p className="mb-2 font-medium">Funding</p>
                     <div className="flex flex-col gap-2">
-                      {podcast.funding.map((f, i) => (
-                        <a
-                          key={i}
-                          href={f.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2 text-sm text-primary hover:underline"
-                        >
-                          <ExternalLinkIcon className="size-3" />
-                          {f.message}
-                        </a>
-                      ))}
+                      {podcast.funding.map((f) => {
+                        const isValidUrl = f.url.startsWith("https://") || f.url.startsWith("http://");
+                        if (!isValidUrl) return null;
+                        return (
+                          <a
+                            key={f.url}
+                            href={f.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm text-primary hover:underline"
+                          >
+                            <ExternalLinkIcon className="size-3" />
+                            {f.message}
+                          </a>
+                        );
+                      })}
                     </div>
                   </div>
                 </>
@@ -220,9 +224,9 @@ export default async function PodcastPage({
                       This podcast supports Value-for-Value via Lightning payments.
                     </p>
                     <div className="flex flex-col gap-2">
-                      {podcast.value.recipients.map((r, i) => (
+                      {podcast.value.recipients.map((r) => (
                         <div
-                          key={i}
+                          key={`${r.type}-${r.name}-${r.address}`}
                           className="flex items-center justify-between rounded-lg border p-3"
                         >
                           <div className="flex items-center gap-2">
@@ -243,7 +247,7 @@ export default async function PodcastPage({
             </div>
           </CollapsibleContent>
         </Collapsible>
-      </div>
+      </section>
     </div>
   );
 }

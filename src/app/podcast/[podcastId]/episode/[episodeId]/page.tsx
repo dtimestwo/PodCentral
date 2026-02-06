@@ -94,31 +94,21 @@ export default async function EpisodePage({
       )}
 
       {/* Description */}
-      <div>
-        <h2 className="mb-2 text-lg font-semibold">Description</h2>
+      <section>
+        <h2 className="mb-3 text-lg font-semibold">Description</h2>
         <p className="max-w-2xl text-sm leading-relaxed">
           {episode.description}
         </p>
-      </div>
+      </section>
 
       {/* Chapters */}
       {chapters.length > 0 && (
-        <div>
-          <h2 className="mb-2 text-lg font-semibold">
+        <section>
+          <h2 className="mb-3 text-lg font-semibold">
             Chapters ({chapters.length})
           </h2>
           <ChapterList {...trackProps} />
-        </div>
-      )}
-
-      {/* Soundbites */}
-      {soundbites.length > 0 && (
-        <div>
-          <h2 className="mb-2 text-lg font-semibold">
-            Soundbites ({soundbites.length})
-          </h2>
-          <SoundbiteList soundbites={soundbites} {...trackProps} />
-        </div>
+        </section>
       )}
 
       {/* Transcript — Collapsible */}
@@ -148,9 +138,19 @@ export default async function EpisodePage({
         </Collapsible>
       )}
 
+      {/* Soundbites */}
+      {soundbites.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-lg font-semibold">
+            Soundbites ({soundbites.length})
+          </h2>
+          <SoundbiteList soundbites={soundbites} {...trackProps} />
+        </section>
+      )}
+
       {/* Comments */}
       {comments.length > 0 && (
-        <div>
+        <section>
           <Separator className="mb-4" />
           <h2 className="mb-3 text-lg font-semibold">
             Comments ({comments.length})
@@ -217,7 +217,7 @@ export default async function EpisodePage({
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
     </div>
   );
