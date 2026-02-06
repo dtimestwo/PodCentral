@@ -44,7 +44,7 @@ export default function Home() {
         </div>
         <ScrollArea className="w-full">
           <div className="flex gap-4 pb-4">
-            {featured.map((podcast) => (
+            {featured.map((podcast, index) => (
               <Link
                 key={podcast.id}
                 href={`/podcast/${podcast.id}`}
@@ -55,6 +55,7 @@ export default function Home() {
                   alt={podcast.title}
                   width={64}
                   height={64}
+                  priority={index === 0}
                   className="size-16 rounded-lg object-cover"
                 />
                 <div className="min-w-0 flex-1">

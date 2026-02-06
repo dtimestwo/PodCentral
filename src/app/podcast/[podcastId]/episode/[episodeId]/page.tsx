@@ -57,6 +57,7 @@ export default async function EpisodePage({
           alt={episode.title}
           width={200}
           height={200}
+          priority
           className="size-48 rounded-xl shadow-lg"
         />
         <div className="flex flex-col justify-end gap-2">

@@ -112,30 +112,35 @@ export default async function PodcastPage({
       {/* Episodes */}
       <div className="px-6">
         <h2 className="mb-3 text-lg font-semibold">Episodes</h2>
-        {trailer && (
-          <>
-            <EpisodeRow
-              key={trailer.id}
-              episode={trailer}
-              podcastTitle={podcast.title}
-              podcastImage={podcast.image}
-              chapters={getChaptersByEpisodeId(trailer.id)}
-              chapterCount={getChaptersByEpisodeId(trailer.id).length}
-            />
-            <Separator className="my-2" />
-          </>
-        )}
+        {trailer && (() => {
+          const trailerChapters = getChaptersByEpisodeId(trailer.id);
+          return (
+            <>
+              <EpisodeRow
+                episode={trailer}
+                podcastTitle={podcast.title}
+                podcastImage={podcast.image}
+                chapters={trailerChapters}
+                chapterCount={trailerChapters.length}
+              />
+              <Separator className="my-2" />
+            </>
+          );
+        })()}
         <div className="flex flex-col">
-          {regularEpisodes.map((episode) => (
-            <EpisodeRow
-              key={episode.id}
-              episode={episode}
-              podcastTitle={podcast.title}
-              podcastImage={podcast.image}
-              chapters={getChaptersByEpisodeId(episode.id)}
-              chapterCount={getChaptersByEpisodeId(episode.id).length}
-            />
-          ))}
+          {regularEpisodes.map((episode) => {
+            const chapters = getChaptersByEpisodeId(episode.id);
+            return (
+              <EpisodeRow
+                key={episode.id}
+                episode={episode}
+                podcastTitle={podcast.title}
+                podcastImage={podcast.image}
+                chapters={chapters}
+                chapterCount={chapters.length}
+              />
+            );
+          })}
         </div>
       </div>
 
