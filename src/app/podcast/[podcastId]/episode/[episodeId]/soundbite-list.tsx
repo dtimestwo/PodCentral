@@ -8,6 +8,7 @@ import { formatDurationFromSeconds } from "@/lib/format";
 
 export function SoundbiteList({
   soundbites,
+  podcastId,
   episodeId,
   enclosureUrl,
   title,
@@ -17,6 +18,7 @@ export function SoundbiteList({
   chapters,
 }: {
   soundbites: Soundbite[];
+  podcastId: string;
   episodeId: string;
   enclosureUrl: string;
   title: string;
@@ -35,7 +37,7 @@ export function SoundbiteList({
       seek(startTime);
     } else {
       setQueueAndPlay(
-        [{ id: episodeId, url: enclosureUrl, title, artist, artwork, duration, chapters }],
+        [{ id: episodeId, podcastId, url: enclosureUrl, title, artist, artwork, duration, chapters }],
         0
       );
       setTimeout(() => seek(startTime), 500);
@@ -60,6 +62,7 @@ export function SoundbiteList({
             size="sm"
             className="mt-2 w-fit"
             onClick={() => handlePlayClip(sb.startTime)}
+            title={`Play this ${sb.duration}s soundbite`}
           >
             <PlayIcon className="mr-1 size-3" fill="currentColor" /> Play Clip
           </Button>

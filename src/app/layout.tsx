@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { PlayerBar } from "@/components/layout/player-bar";
 import { AudioProvider } from "@/components/audio/provider";
+import { AuthProvider } from "@/components/auth/auth-provider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -36,19 +37,21 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <TooltipProvider delayDuration={200}>
-            <AudioProvider>
-              <SidebarProvider>
-                <AppSidebar />
-                <SidebarInset>
-                  <main className="flex-1 overflow-auto pb-24">
-                    {children}
-                  </main>
-                </SidebarInset>
-              </SidebarProvider>
-              <PlayerBar />
-            </AudioProvider>
-          </TooltipProvider>
+          <AuthProvider>
+            <TooltipProvider delayDuration={200}>
+              <AudioProvider>
+                <SidebarProvider>
+                  <AppSidebar />
+                  <SidebarInset>
+                    <main className="flex-1 overflow-auto pb-24">
+                      {children}
+                    </main>
+                  </SidebarInset>
+                </SidebarProvider>
+                <PlayerBar />
+              </AudioProvider>
+            </TooltipProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

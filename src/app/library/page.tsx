@@ -1,33 +1,152 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { LibraryIcon, ListMusicIcon, ClockIcon, DownloadIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PodcastCard } from "@/components/podcast/podcast-card";
 import { EpisodeRow } from "@/components/podcast/episode-row";
 import { useLibraryStore } from "@/stores/library-store";
-import { podcasts } from "@/data/podcasts";
-import { episodes } from "@/data/episodes";
-import { getChaptersByEpisodeId } from "@/data/chapters";
 import { useAudioStore } from "@/lib/audio-store";
+import { createClient } from "@/lib/supabase/client";
+import type { Chapter } from "@/lib/types";
+
+interface LocalPodcast {
+  id: string;
+  title: string;
+  author: string;
+  image: string;
+}
+
+interface LocalEpisode {
+  id: string;
+  podcastId: string;
+  title: string;
+  description: string;
+  datePublished: string;
+  duration: number;
+  enclosureUrl: string;
+  image?: string;
+}
 
 export default function LibraryPage() {
   const subscriptions = useLibraryStore((s) => s.subscriptions);
   const history = useLibraryStore((s) => s.history);
+  const hasHydrated = useLibraryStore((s) => s.hasHydrated);
   const queue = useAudioStore((s) => s.queue);
+
+  const [podcasts, setPodcasts] = useState<LocalPodcast[]>([]);
+  const [episodes, setEpisodes] = useState<LocalEpisode[]>([]);
+  const [chaptersByEpisode, setChaptersByEpisode] = useState<Record<string, Chapter[]>>({});
+  const [loading, setLoading] = useState(true);
+
+  // Fetch subscribed podcasts and history episodes from Supabase
+  useEffect(() => {
+    // Wait for Zustand store to hydrate from localStorage
+    if (!hasHydrated) {
+      return;
+    }
+
+    async function fetchData() {
+      // Filter to only valid UUIDs (Supabase IDs are UUIDs, filter out old dummy IDs)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const validSubscriptions = subscriptions.filter(id => uuidRegex.test(id));
+      const validHistoryIds = history.map(h => h.episodeId).filter(id => uuidRegex.test(id));
+
+      if (validSubscriptions.length === 0 && validHistoryIds.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      const supabase = createClient();
+
+      // Fetch subscribed podcasts
+      if (validSubscriptions.length > 0) {
+        const { data: podcastData } = await supabase
+          .from("podcasts")
+          .select("id, title, author, image")
+          .in("id", validSubscriptions);
+
+        if (podcastData) {
+          setPodcasts(
+            podcastData.map((p: { id: string; title: string; author: string; image: string | null }) => ({
+              id: p.id,
+              title: p.title,
+              author: p.author,
+              image: p.image || "https://picsum.photos/seed/podcast/400/400",
+            }))
+          );
+        }
+      }
+
+      // Fetch history episodes
+      if (validHistoryIds.length > 0) {
+        const { data: episodeData } = await supabase
+          .from("episodes")
+          .select("id, podcast_id, title, description, date_published, duration, enclosure_url, image")
+          .in("id", validHistoryIds);
+
+        if (episodeData) {
+          setEpisodes(
+            episodeData.map((e: {
+              id: string;
+              podcast_id: string;
+              title: string;
+              description: string;
+              date_published: string;
+              duration: number;
+              enclosure_url: string;
+              image: string | null;
+            }) => ({
+              id: e.id,
+              podcastId: e.podcast_id,
+              title: e.title,
+              description: e.description,
+              datePublished: e.date_published,
+              duration: e.duration,
+              enclosureUrl: e.enclosure_url,
+              image: e.image || undefined,
+            }))
+          );
+
+          // Fetch chapters for these episodes
+          const { data: chapters } = await supabase
+            .from("chapters")
+            .select("id, episode_id, title, start_time, end_time")
+            .in("episode_id", validHistoryIds);
+
+          if (chapters) {
+            const byEpisode: Record<string, Chapter[]> = {};
+            chapters.forEach((ch: { episode_id: string; title: string; start_time: number; end_time: number | null }) => {
+              if (!byEpisode[ch.episode_id]) byEpisode[ch.episode_id] = [];
+              byEpisode[ch.episode_id].push({
+                title: ch.title,
+                startTime: ch.start_time,
+                endTime: ch.end_time || undefined,
+              });
+            });
+            setChaptersByEpisode(byEpisode);
+          }
+        }
+      }
+
+      setLoading(false);
+    }
+
+    fetchData();
+  }, [subscriptions, history, hasHydrated]);
 
   const subscribedPodcasts = useMemo(
     () => podcasts.filter((p) => subscriptions.includes(p.id)),
-    [subscriptions]
+    [podcasts, subscriptions]
   );
 
   const podcastMap = useMemo(
     () => new Map(podcasts.map((p) => [p.id, p])),
-    []
+    [podcasts]
   );
   const episodeMap = useMemo(
     () => new Map(episodes.map((e) => [e.id, e])),
-    []
+    [episodes]
   );
 
   return (
@@ -57,7 +176,11 @@ export default function LibraryPage() {
         </TabsList>
 
         <TabsContent value="subscriptions" className="mt-4">
-          {subscribedPodcasts.length > 0 ? (
+          {!hasHydrated || loading ? (
+            <div className="py-12 text-center text-muted-foreground">
+              Loading...
+            </div>
+          ) : subscribedPodcasts.length > 0 ? (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {subscribedPodcasts.map((podcast) => (
                 <PodcastCard key={podcast.id} podcast={podcast} />
@@ -76,8 +199,16 @@ export default function LibraryPage() {
               {queue.map((track, i) => {
                 const trackId = typeof track.id === "string" ? track.id : String(track.id ?? "");
                 const episode = episodeMap.get(trackId);
-                if (!episode) return null;
+                if (!episode) {
+                  // For queue items not in our fetched episodes, show minimal info
+                  return (
+                    <div key={`${trackId}-${i}`} className="flex items-center gap-3 rounded-lg px-3 py-2">
+                      <span className="text-sm">{track.title}</span>
+                    </div>
+                  );
+                }
                 const podcast = podcastMap.get(episode.podcastId);
+                const chapters = chaptersByEpisode[episode.id] || [];
                 return (
                   <EpisodeRow
                     key={`${trackId}-${i}`}
@@ -85,8 +216,8 @@ export default function LibraryPage() {
                     podcastTitle={podcast?.title}
                     podcastImage={podcast?.image}
                     showPodcastName
-                    chapters={getChaptersByEpisodeId(episode.id)}
-                    chapterCount={getChaptersByEpisodeId(episode.id).length}
+                    chapters={chapters}
+                    chapterCount={chapters.length}
                   />
                 );
               })}
@@ -103,12 +234,17 @@ export default function LibraryPage() {
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">
-          {history.length > 0 ? (
+          {!hasHydrated || loading ? (
+            <div className="py-12 text-center text-muted-foreground">
+              Loading...
+            </div>
+          ) : history.length > 0 ? (
             <div className="flex flex-col">
               {history.map((entry) => {
                 const episode = episodeMap.get(entry.episodeId);
                 if (!episode) return null;
                 const podcast = podcastMap.get(episode.podcastId);
+                const chapters = chaptersByEpisode[episode.id] || [];
                 return (
                   <EpisodeRow
                     key={entry.episodeId}
@@ -116,8 +252,8 @@ export default function LibraryPage() {
                     podcastTitle={podcast?.title}
                     podcastImage={podcast?.image}
                     showPodcastName
-                    chapters={getChaptersByEpisodeId(episode.id)}
-                    chapterCount={getChaptersByEpisodeId(episode.id).length}
+                    chapters={chapters}
+                    chapterCount={chapters.length}
                   />
                 );
               })}
@@ -138,7 +274,7 @@ export default function LibraryPage() {
             <DownloadIcon className="size-8" />
             <p>Downloads coming soon</p>
             <p className="text-xs">
-              This feature will be available when a database is connected
+              Offline playback will be available in a future update
             </p>
           </div>
         </TabsContent>

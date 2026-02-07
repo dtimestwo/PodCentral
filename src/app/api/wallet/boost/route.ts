@@ -1,0 +1,92 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+
+// Helper to verify origin for CSRF protection
+function isValidOrigin(request: NextRequest): boolean {
+  const origin = request.headers.get("origin");
+  const host = request.headers.get("host");
+
+  if (!origin) return true; // Same-origin requests may not have origin header
+
+  try {
+    const originUrl = new URL(origin);
+    return originUrl.host === host;
+  } catch {
+    return false;
+  }
+}
+
+export async function POST(request: NextRequest) {
+  // CSRF protection
+  if (!isValidOrigin(request)) {
+    return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json();
+    const { amount, recipient, message, episodeTitle } = body;
+
+    if (typeof amount !== "number" || amount <= 0 || !Number.isInteger(amount)) {
+      return NextResponse.json(
+        { error: "amount must be a positive integer" },
+        { status: 400 }
+      );
+    }
+
+    if (!recipient || typeof recipient !== "string") {
+      return NextResponse.json(
+        { error: "recipient is required" },
+        { status: 400 }
+      );
+    }
+
+    // Use atomic RPC function to prevent race conditions
+    const { data: result, error: rpcError } = await supabase
+      .rpc("deduct_wallet_balance", {
+        p_user_id: user.id,
+        p_amount: amount,
+      })
+      .single();
+
+    if (rpcError) {
+      console.error("Wallet deduction error:", rpcError);
+      return NextResponse.json({ error: "Failed to process transaction" }, { status: 500 });
+    }
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error_message || "Transaction failed" },
+        { status: 400 }
+      );
+    }
+
+    // Record transaction
+    const { error: txError } = await supabase.from("wallet_transactions").insert({
+      user_id: user.id,
+      type: "boost",
+      amount: -amount,
+      recipient,
+      message: message || null,
+      episode_title: episodeTitle || null,
+    });
+
+    if (txError) {
+      // Log error but don't fail - balance was already deducted atomically
+      console.error("Transaction record error:", txError);
+    }
+
+    return NextResponse.json({
+      success: true,
+      newBalance: result.new_balance,
+    });
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+}

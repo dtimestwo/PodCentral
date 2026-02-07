@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   RadioIcon,
   UsersIcon,
@@ -10,13 +10,32 @@ import {
   CalendarIcon,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { getLiveStreams } from "@/data/live-streams";
+import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { LiveStream } from "@/lib/types";
+
+interface LiveStream {
+  id: string;
+  title: string;
+  podcastTitle: string;
+  podcastImage: string;
+  status: "live" | "scheduled";
+  listenerCount: number;
+  scheduledStart?: string;
+  chat: ChatMessage[];
+}
+
+interface ChatMessage {
+  id: string;
+  author: string;
+  text: string;
+  timestamp: string;
+  isBoost: boolean;
+  boostAmount?: number;
+}
 
 function LiveBadge() {
   return (
@@ -140,14 +159,18 @@ function LiveChat({ stream }: { stream: LiveStream }) {
         </div>
       </ScrollArea>
       <div className="flex gap-2 border-t p-3">
+        <label htmlFor="chat-message" className="sr-only">
+          Chat message
+        </label>
         <Input
+          id="chat-message"
           placeholder="Send a message..."
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           maxLength={500}
         />
-        <Button size="icon" onClick={sendMessage}>
+        <Button size="icon" onClick={sendMessage} aria-label="Send message">
           <SendIcon className="size-4" />
         </Button>
         <Tooltip>
@@ -164,8 +187,78 @@ function LiveChat({ stream }: { stream: LiveStream }) {
 }
 
 export default function LivePage() {
-  const streams = getLiveStreams();
+  const [streams, setStreams] = useState<LiveStream[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeStream, setActiveStream] = useState<LiveStream | null>(null);
+
+  useEffect(() => {
+    async function fetchStreams() {
+      const supabase = createClient();
+
+      const { data: liveStreamsData } = await supabase
+        .from("live_streams")
+        .select("id, title, podcast_title, podcast_image, status, listener_count, scheduled_start")
+        .in("status", ["live", "scheduled"])
+        .order("status", { ascending: false });
+
+      if (liveStreamsData) {
+        // Fetch chat messages for each stream
+        const streamIds = liveStreamsData.map((s: { id: string }) => s.id);
+        const { data: chatData } = await supabase
+          .from("chat_messages")
+          .select("id, live_stream_id, author, text, created_at, is_boost, boost_amount")
+          .in("live_stream_id", streamIds)
+          .order("created_at", { ascending: true });
+
+        const chatByStream = new Map<string, ChatMessage[]>();
+        (chatData || []).forEach((msg: {
+          id: string;
+          live_stream_id: string;
+          author: string;
+          text: string;
+          created_at: string;
+          is_boost: boolean;
+          boost_amount: number | null;
+        }) => {
+          const existing = chatByStream.get(msg.live_stream_id) || [];
+          existing.push({
+            id: msg.id,
+            author: msg.author,
+            text: msg.text,
+            timestamp: msg.created_at,
+            isBoost: msg.is_boost,
+            boostAmount: msg.boost_amount || undefined,
+          });
+          chatByStream.set(msg.live_stream_id, existing);
+        });
+
+        setStreams(
+          liveStreamsData.map((s: {
+            id: string;
+            title: string;
+            podcast_title: string;
+            podcast_image: string | null;
+            status: string;
+            listener_count: number;
+            scheduled_start: string | null;
+          }) => ({
+            id: s.id,
+            title: s.title,
+            podcastTitle: s.podcast_title,
+            podcastImage: s.podcast_image || "https://picsum.photos/seed/live/400/400",
+            status: s.status as "live" | "scheduled",
+            listenerCount: s.listener_count,
+            scheduledStart: s.scheduled_start || undefined,
+            chat: chatByStream.get(s.id) || [],
+          }))
+        );
+      }
+
+      setLoading(false);
+    }
+
+    fetchStreams();
+  }, []);
 
   const liveStreams = streams.filter((s) => s.status === "live");
   const scheduledStreams = streams.filter((s) => s.status === "scheduled");
@@ -223,36 +316,54 @@ export default function LivePage() {
         </div>
       </div>
 
-      {liveStreams.length > 0 && (
-        <section>
-          <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold">
-            <LiveBadge /> Live Now
-          </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {liveStreams.map((stream) => (
-              <LiveStreamCard
-                key={stream.id}
-                stream={stream}
-                onJoin={setActiveStream}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+      {loading ? (
+        <div className="py-12 text-center text-muted-foreground">
+          Loading streams...
+        </div>
+      ) : (
+        <>
+          {liveStreams.length > 0 && (
+            <section>
+              <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold">
+                <LiveBadge /> Live Now
+              </h2>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {liveStreams.map((stream) => (
+                  <LiveStreamCard
+                    key={stream.id}
+                    stream={stream}
+                    onJoin={setActiveStream}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
 
-      {scheduledStreams.length > 0 && (
-        <section>
-          <h2 className="mb-4 text-xl font-semibold">Upcoming</h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {scheduledStreams.map((stream) => (
-              <LiveStreamCard
-                key={stream.id}
-                stream={stream}
-                onJoin={setActiveStream}
-              />
-            ))}
-          </div>
-        </section>
+          {scheduledStreams.length > 0 && (
+            <section>
+              <h2 className="mb-4 text-xl font-semibold">Upcoming</h2>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {scheduledStreams.map((stream) => (
+                  <LiveStreamCard
+                    key={stream.id}
+                    stream={stream}
+                    onJoin={setActiveStream}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {liveStreams.length === 0 && scheduledStreams.length === 0 && (
+            <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed p-12 text-center text-muted-foreground">
+              <RadioIcon className="size-8" />
+              <p>No live streams at the moment</p>
+              <p className="text-xs">
+                Check back later for live podcast recordings
+              </p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

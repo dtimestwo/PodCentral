@@ -3,9 +3,17 @@ import Link from "next/link";
 import { LockIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { Podcast } from "@/lib/types";
 
-export function PodcastCard({ podcast }: { podcast: Podcast }) {
+interface PodcastCardProps {
+  id: string;
+  title: string;
+  author: string;
+  image: string;
+  locked?: boolean;
+  medium?: string;
+}
+
+export function PodcastCard({ podcast }: { podcast: PodcastCardProps }) {
   return (
     <Link href={`/podcast/${podcast.id}`}>
       <Card className="group overflow-hidden border-0 bg-transparent shadow-none transition-colors hover:bg-accent">

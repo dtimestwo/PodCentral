@@ -7,6 +7,7 @@ import { formatDurationFromSeconds } from "@/lib/format";
 
 export function ChapterList({
   chapters,
+  podcastId,
   episodeId,
   enclosureUrl,
   title,
@@ -15,6 +16,7 @@ export function ChapterList({
   duration,
 }: {
   chapters: Chapter[];
+  podcastId: string;
   episodeId: string;
   enclosureUrl: string;
   title: string;
@@ -32,7 +34,7 @@ export function ChapterList({
       seek(startTime);
     } else {
       setQueueAndPlay(
-        [{ id: episodeId, url: enclosureUrl, title, artist, artwork, duration, chapters }],
+        [{ id: episodeId, podcastId, url: enclosureUrl, title, artist, artwork, duration, chapters }],
         0
       );
       // Seek after a short delay to allow the track to load
@@ -47,6 +49,7 @@ export function ChapterList({
           key={chapter.startTime}
           className="flex items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-accent"
           onClick={() => handleChapterClick(chapter.startTime)}
+          title="Jump to chapter"
         >
           {chapter.img ? (
             <Image

@@ -103,16 +103,18 @@ export default function SettingsPage() {
             <Separator />
 
             <div>
-              <Label className="text-sm">
+              <Label htmlFor="streaming-rate" className="text-sm">
                 Streaming Rate: {streamingRate} sats/min
               </Label>
               <Slider
+                id="streaming-rate"
                 value={[streamingRate]}
                 onValueChange={(v) => setStreamingRate(v[0])}
                 min={10}
                 max={500}
                 step={10}
                 className="mt-2"
+                aria-label="Streaming rate in sats per minute"
               />
               <p className="mt-1 text-xs text-muted-foreground">
                 Sats streamed per minute while listening to value-enabled podcasts

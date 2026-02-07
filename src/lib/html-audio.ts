@@ -196,9 +196,25 @@ class HtmlAudio {
       return;
     }
 
+    // Validate URL before attempting to load
+    if (!url || typeof url !== "string") {
+      throw new Error("Invalid audio URL");
+    }
+
+    // Ensure URL has a valid protocol
+    let audioUrl = url;
+    if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
+      throw new Error("Invalid audio URL protocol");
+    }
+
+    // Upgrade http to https for better compatibility (many servers redirect anyway)
+    if (url.startsWith("http://")) {
+      audioUrl = url.replace("http://", "https://");
+    }
+
     try {
       this.retryAttempts = 0;
-      if (audio.src === url) {
+      if (audio.src === audioUrl) {
         if (audio.currentTime !== startTime && !isLiveStream) {
           audio.currentTime = startTime;
         }
@@ -206,7 +222,7 @@ class HtmlAudio {
       }
 
       audio.pause();
-      this.loadingUrl = url;
+      this.loadingUrl = audioUrl;
 
       const loadTimeout = isLiveStream
         ? this.LOAD_TIMEOUT_LIVE
@@ -261,16 +277,26 @@ class HtmlAudio {
             return;
           }
           // Ignore stale errors from a previous source
-          if (!audio.src || !audio.src.includes(url)) {
+          if (!audio.src || !audio.src.includes(audioUrl)) {
             return;
           }
           isResolved = true;
           cleanup();
           const error = audio.error;
-          const errorMessage =
-            error?.message || `Error code: ${error?.code ?? "unknown"}`;
-          // Silent error - reject without console logging
-          reject(new Error(`Audio load failed: ${errorMessage}`));
+
+          // Provide user-friendly error messages based on error code
+          let errorMessage: string;
+          if (error?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
+            errorMessage = "This episode cannot be played. The audio format may not be supported by your browser.";
+          } else if (error?.code === MediaError.MEDIA_ERR_NETWORK) {
+            errorMessage = "Network error while loading audio. Please check your connection.";
+          } else if (error?.code === MediaError.MEDIA_ERR_DECODE) {
+            errorMessage = "Audio decoding error. The file may be corrupted.";
+          } else {
+            errorMessage = error?.message || `Playback error (code: ${error?.code ?? "unknown"})`;
+          }
+
+          reject(new Error(errorMessage));
         };
 
         timeoutId = setTimeout(handleTimeout, loadTimeout);
@@ -285,10 +311,10 @@ class HtmlAudio {
         // automatically — do NOT call audio.load() again as it aborts
         // the in-progress load and fires a spurious error event.
         audio.preload = "auto";
-        audio.src = url;
+        audio.src = audioUrl;
       });
     } catch (error) {
-      console.error("Audio load process error:", error);
+      // Re-throw to be handled by the provider
       throw error;
     }
   }

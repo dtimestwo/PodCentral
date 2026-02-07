@@ -1,14 +1,31 @@
+"use client";
+
 import { ClockIcon } from "lucide-react";
 import { EpisodeRow } from "@/components/podcast/episode-row";
-import { getChaptersByEpisodeId } from "@/data/chapters";
-import type { Episode, Podcast } from "@/lib/types";
+
+interface LocalEpisode {
+  id: string;
+  podcastId: string;
+  title: string;
+  description: string;
+  datePublished: string;
+  duration: number;
+  enclosureUrl: string;
+  image?: string;
+}
+
+interface LocalPodcast {
+  id: string;
+  title: string;
+  image: string;
+}
 
 export function RecentEpisodes({
   episodes,
   podcasts,
 }: {
-  episodes: Episode[];
-  podcasts: Podcast[];
+  episodes: LocalEpisode[];
+  podcasts: LocalPodcast[];
 }) {
   const podcastMap = new Map(podcasts.map((p) => [p.id, p]));
 
@@ -28,8 +45,6 @@ export function RecentEpisodes({
               podcastTitle={podcast?.title}
               podcastImage={podcast?.image}
               showPodcastName
-              chapters={getChaptersByEpisodeId(episode.id)}
-              chapterCount={getChaptersByEpisodeId(episode.id).length}
             />
           );
         })}

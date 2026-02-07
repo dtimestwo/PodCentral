@@ -3,9 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
-      { protocol: "https", hostname: "picsum.photos" },
-      { protocol: "https", hostname: "i.pravatar.cc" },
-      { protocol: "https", hostname: "cdn.pixabay.com" },
+      // Allow all HTTPS images (podcast artwork comes from many sources)
+      { protocol: "https", hostname: "**" },
     ],
   },
   headers: async () => [

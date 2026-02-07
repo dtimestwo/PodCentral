@@ -21,6 +21,7 @@ import {
   SidebarMenuItem,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import { UserMenu } from "./user-menu";
 
 const navItems = [
   { title: "Home", href: "/", icon: HomeIcon },
@@ -33,7 +34,7 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="icon" variant="sidebar">
+    <Sidebar collapsible="icon" variant="sidebar" className="pb-24">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -90,6 +91,9 @@ export function AppSidebar() {
                 <span>Settings</span>
               </Link>
             </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem className="flex items-center justify-center py-2">
+            <UserMenu />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
