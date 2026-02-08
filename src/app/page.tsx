@@ -2,6 +2,9 @@ import { RadioIcon, StarIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+
+// Revalidate home page data every 5 minutes
+export const revalidate = 300;
 import { TrendingSection } from "@/components/discover/trending-section";
 import { CategoryGrid } from "@/components/discover/category-grid";
 import { RecentEpisodes } from "@/components/discover/recent-episodes";

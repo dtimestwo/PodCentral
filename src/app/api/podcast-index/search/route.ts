@@ -1,6 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchPodcasts } from "@/lib/podcast-index/client";
 
+// Simple in-memory rate limiting
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT = 30; // requests per window
+const RATE_WINDOW = 60 * 1000; // 1 minute
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_WINDOW });
+    return false;
+  }
+
+  if (record.count >= RATE_LIMIT) {
+    return true;
+  }
+
+  record.count++;
+  return false;
+}
+
 // Sanitize search query to prevent injection attacks
 function sanitizeQuery(query: string): string {
   // Trim and limit length
@@ -13,6 +35,14 @@ function sanitizeQuery(query: string): string {
 }
 
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
+  if (isRateLimited(ip)) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429 }
+    );
+  }
   const searchParams = request.nextUrl.searchParams;
   const rawQuery = searchParams.get("q");
 
@@ -41,7 +71,14 @@ export async function GET(request: NextRequest) {
       categories: Object.values(p.categories || {}),
     }));
 
-    return NextResponse.json({ podcasts: results });
+    return NextResponse.json(
+      { podcasts: results },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+        },
+      }
+    );
   } catch (error) {
     console.error("Podcast Index search error:", error);
     return NextResponse.json(

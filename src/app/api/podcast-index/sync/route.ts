@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import { syncPodcastFromIndex } from "@/lib/podcast-index/sync";
 
 // Simple in-memory rate limiting (per IP)
@@ -42,6 +43,17 @@ export async function POST(request: NextRequest) {
   // CSRF protection
   if (!isValidOrigin(request)) {
     return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
+  }
+
+  // Authentication required
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "Authentication required to add podcasts" },
+      { status: 401 }
+    );
   }
 
   // Rate limiting

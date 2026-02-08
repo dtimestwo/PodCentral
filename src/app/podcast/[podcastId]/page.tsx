@@ -9,6 +9,9 @@ import {
   ChevronDownIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+
+// Revalidate podcast page data every hour
+export const revalidate = 3600;
 import { stripHtml } from "@/lib/html";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
