@@ -11,6 +11,7 @@ import { PodcastCard } from "@/components/podcast/podcast-card";
 import { EpisodeRow } from "@/components/podcast/episode-row";
 import { createClient } from "@/lib/supabase/client";
 import { stripHtml } from "@/lib/html";
+import { sanitizeSearchQuery } from "@/lib/validation";
 import type { Chapter } from "@/lib/types";
 
 // Local types that match what we fetch from DB (subset of full types)
@@ -118,9 +119,10 @@ export default function SearchPage() {
         .from("podcasts")
         .select("id, title, author, description, image, episode_count, language, categories, podcast_index_id");
 
-      if (debouncedQuery.trim()) {
+      const safeQuery = sanitizeSearchQuery(debouncedQuery);
+      if (safeQuery) {
         podcastQuery = podcastQuery.or(
-          `title.ilike.%${debouncedQuery}%,author.ilike.%${debouncedQuery}%,description.ilike.%${debouncedQuery}%`
+          `title.ilike.%${safeQuery}%,author.ilike.%${safeQuery}%,description.ilike.%${safeQuery}%`
         );
       }
 
@@ -131,9 +133,9 @@ export default function SearchPage() {
         .order("date_published", { ascending: false })
         .limit(50);
 
-      if (debouncedQuery.trim()) {
+      if (safeQuery) {
         episodeQuery = episodeQuery.or(
-          `title.ilike.%${debouncedQuery}%,description.ilike.%${debouncedQuery}%`
+          `title.ilike.%${safeQuery}%,description.ilike.%${safeQuery}%`
         );
       }
 

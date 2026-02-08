@@ -10,7 +10,7 @@ interface WalletStore {
   userId: string | null;
   isSyncing: boolean;
 
-  sendBoost: (amount: number, recipient: string, message?: string, episodeTitle?: string) => void;
+  sendBoost: (amount: number, recipient: string, message?: string, episodeTitle?: string) => Promise<boolean>;
   streamSats: (amount: number, episodeTitle?: string) => void;
   topUp: (amount: number) => void;
   setStreamingRate: (rate: number) => void;
@@ -28,16 +28,57 @@ export const useWalletStore = create<WalletStore>()(persist((set, get) => ({
   userId: null,
   isSyncing: false,
 
-  sendBoost: (amount, recipient, message, episodeTitle) => {
-    if (amount <= 0) return;
-    const { userId, balance, syncToServer } = get();
-    const MAX_TRANSACTIONS = 1000; // Limit transactions to prevent unbounded growth
+  sendBoost: async (amount, recipient, message, episodeTitle) => {
+    if (amount <= 0) return false;
+    const { userId, balance } = get();
+    const MAX_TRANSACTIONS = 1000;
 
-    // Check balance before deducting (optimistic update with validation)
-    if (amount > balance) return;
+    // For authenticated users, use the atomic API endpoint
+    if (userId) {
+      try {
+        const response = await fetch("/api/wallet/boost", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount, recipient, message, episodeTitle }),
+        });
 
-    set((state) => {
-      const newTransactions = [
+        if (!response.ok) {
+          console.error("Boost failed:", await response.text());
+          return false;
+        }
+
+        const { newBalance } = await response.json();
+
+        // Update local state only after server confirms
+        set((state) => ({
+          balance: newBalance,
+          transactions: [
+            {
+              id: `tx-${Date.now()}`,
+              type: "boost" as const,
+              amount: -amount,
+              recipient,
+              message,
+              episodeTitle,
+              timestamp: new Date().toISOString(),
+            },
+            ...state.transactions,
+          ].slice(0, MAX_TRANSACTIONS),
+        }));
+
+        return true;
+      } catch (error) {
+        console.error("Boost error:", error);
+        return false;
+      }
+    }
+
+    // For anonymous users, use local-only (still has race condition but acceptable for demo)
+    if (amount > balance) return false;
+
+    set((state) => ({
+      balance: Math.max(0, state.balance - amount),
+      transactions: [
         {
           id: `tx-${Date.now()}`,
           type: "boost" as const,
@@ -48,17 +89,10 @@ export const useWalletStore = create<WalletStore>()(persist((set, get) => ({
           timestamp: new Date().toISOString(),
         },
         ...state.transactions,
-      ].slice(0, MAX_TRANSACTIONS); // Trim to max size
+      ].slice(0, MAX_TRANSACTIONS),
+    }));
 
-      return {
-        balance: Math.max(0, state.balance - amount),
-        transactions: newTransactions,
-      };
-    });
-
-    if (userId) {
-      syncToServer();
-    }
+    return true;
   },
 
   streamSats: (amount, episodeTitle) => {

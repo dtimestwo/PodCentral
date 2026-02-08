@@ -48,21 +48,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Use atomic RPC function to prevent race conditions
-    const { data: result, error: rpcError } = await supabase
+    const { data: results, error: rpcError } = await supabase
       .rpc("deduct_wallet_balance", {
         p_user_id: user.id,
         p_amount: amount,
-      })
-      .single();
+      });
 
     if (rpcError) {
       console.error("Wallet deduction error:", rpcError);
       return NextResponse.json({ error: "Failed to process transaction" }, { status: 500 });
     }
 
-    if (!result.success) {
+    // RPC returns an array with one row
+    const result = results?.[0];
+
+    if (!result?.success) {
       return NextResponse.json(
-        { error: result.error_message || "Transaction failed" },
+        { error: "Insufficient balance" },
         { status: 400 }
       );
     }

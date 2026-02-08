@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { sanitizeSearchQuery } from "@/lib/validation";
 import type { Episode, Person, SocialInteract, ValueConfig, ValueRecipient } from "@/lib/types";
 
 export async function getEpisodesByPodcastId(podcastId: string): Promise<Episode[]> {
@@ -90,6 +91,11 @@ export async function getRecentEpisodes(limit = 10): Promise<Episode[]> {
 
 export async function searchEpisodes(query: string): Promise<Episode[]> {
   const supabase = await createClient();
+  const safeQuery = sanitizeSearchQuery(query);
+
+  if (!safeQuery) {
+    return [];
+  }
 
   const { data: episodes, error } = await supabase
     .from("episodes")
@@ -106,7 +112,7 @@ export async function searchEpisodes(query: string): Promise<Episode[]> {
         value_recipients (name, type, address, split)
       )
     `)
-    .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+    .or(`title.ilike.%${safeQuery}%,description.ilike.%${safeQuery}%`)
     .order("date_published", { ascending: false });
 
   if (error) {
