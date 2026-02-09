@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "006"
 tags: [code-review, data-integrity, performance]
@@ -70,13 +70,14 @@ Create a PostgreSQL function that wraps all sync operations in a transaction.
 
 ## Acceptance Criteria
 
-- [ ] Sync operations are atomic (all or nothing)
-- [ ] Failed syncs don't leave partial data
-- [ ] Unique constraints prevent duplicate inserts
-- [ ] Performance is acceptable (batch operations)
+- [x] Sync operations are atomic (all or nothing)
+- [x] Failed syncs don't leave partial data
+- [x] Unique constraints prevent duplicate inserts
+- [x] Performance is acceptable (batch operations)
 
 ## Work Log
 
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2024-02-08 | Identified during data integrity review | Complex multi-table operations need transactions |
+| 2026-02-08 | Implemented PostgreSQL RPC transaction solution | Created 004_sync_transaction_support.sql migration with sync_podcast_from_api() and helper functions. Refactored sync.ts to use RPC for atomic operations. External resources (chapters, transcripts) synced separately after main transaction. |
