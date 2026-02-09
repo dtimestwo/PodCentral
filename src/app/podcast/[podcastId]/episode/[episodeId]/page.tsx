@@ -141,11 +141,18 @@ export default async function EpisodePage({
       .eq("episode_id", episodeId),
   ]);
 
+  // Define type for join result
+  type PersonRow = {
+    persons: DbPerson | null;
+  };
+
   const chapters = (chaptersRes.data || []) as DbChapter[];
   const transcript = (transcriptRes.data || []) as DbTranscriptSegment[];
   const allComments = (commentsRes.data || []) as DbComment[];
   const soundbites = (soundbitesRes.data || []) as DbSoundbite[];
-  const persons = (personsRes.data || []).map((ep: { persons: DbPerson }) => ep.persons).filter(Boolean) as DbPerson[];
+  const persons = ((personsRes.data || []) as unknown as PersonRow[])
+    .map((ep) => ep.persons)
+    .filter((p): p is DbPerson => p !== null);
 
   // Build comment tree (top-level comments with replies)
   const topLevelComments = allComments.filter((c) => !c.parent_id);
@@ -179,6 +186,7 @@ export default async function EpisodePage({
   // Map soundbites to app format
   const mappedSoundbites = soundbites.map((sb) => ({
     id: sb.id,
+    episodeId: episodeId,
     title: sb.title,
     startTime: sb.start_time,
     duration: sb.duration,

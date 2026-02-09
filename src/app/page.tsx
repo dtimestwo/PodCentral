@@ -14,7 +14,12 @@ interface DbPodcast {
   id: string;
   title: string;
   author: string;
+  description: string;
   image: string | null;
+  categories: string[] | null;
+  locked: boolean;
+  medium: string | null;
+  language: string | null;
   episode_count: number;
 }
 
@@ -32,6 +37,7 @@ interface DbEpisode {
 interface DbCategory {
   id: string;
   name: string;
+  icon: string;
 }
 
 interface DbLiveStream {
@@ -48,7 +54,7 @@ export default async function Home() {
   const [podcastsRes, episodesRes, categoriesRes, liveStreamsRes] = await Promise.all([
     supabase
       .from("podcasts")
-      .select("id, title, author, image, episode_count")
+      .select("id, title, author, description, image, categories, locked, medium, language, episode_count")
       .order("created_at", { ascending: false })
       .limit(20),
     supabase
@@ -58,7 +64,7 @@ export default async function Home() {
       .limit(8),
     supabase
       .from("categories")
-      .select("id, name")
+      .select("id, name, icon")
       .order("name"),
     supabase
       .from("live_streams")
@@ -78,7 +84,12 @@ export default async function Home() {
     id: p.id,
     title: p.title,
     author: p.author,
+    description: p.description,
     image: p.image || "https://picsum.photos/seed/podcast/400/400",
+    categories: p.categories || [],
+    locked: p.locked ?? false,
+    medium: (p.medium || "podcast") as "podcast" | "music" | "video" | "audiobook",
+    language: p.language || "en",
     episodeCount: p.episode_count,
   }));
 
@@ -96,6 +107,7 @@ export default async function Home() {
   const mappedCategories = categories.map((c) => ({
     id: c.id,
     name: c.name,
+    icon: c.icon,
   }));
 
   return (

@@ -134,13 +134,18 @@ export default async function PodcastPage({
   });
 
   // Fetch persons for episodes
+  type EpisodePersonRow = {
+    episode_id: string;
+    persons: DbPerson | null;
+  };
+
   const { data: episodePersons } = await supabase
     .from("episode_persons")
     .select("episode_id, persons(*)")
     .in("episode_id", episodeIds);
 
   const uniquePersons = new Map<string, DbPerson>();
-  (episodePersons || []).forEach((ep: { episode_id: string; persons: DbPerson }) => {
+  ((episodePersons || []) as unknown as EpisodePersonRow[]).forEach((ep) => {
     if (ep.persons) {
       uniquePersons.set(ep.persons.id, ep.persons);
     }
