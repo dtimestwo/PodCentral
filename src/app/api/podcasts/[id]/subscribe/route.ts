@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isValidUUID } from "@/lib/validation";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: podcastId } = await params;
+
+  if (!isValidUUID(podcastId)) {
+    return NextResponse.json({ error: "Invalid podcast ID" }, { status: 400 });
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -32,6 +38,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: podcastId } = await params;
+
+  if (!isValidUUID(podcastId)) {
+    return NextResponse.json({ error: "Invalid podcast ID" }, { status: 400 });
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 

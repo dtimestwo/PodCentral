@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p3
 issue_id: "009"
 tags: [code-review, quality, maintainability]
@@ -91,3 +91,6 @@ export const PODCAST_WITH_RELATIONS = `
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2024-02-08 | Identified during code quality review | Regular deduplication prevents drift |
+| 2026-02-08 | Created `src/lib/api/middleware.ts` with shared `isValidOrigin`, `createRateLimiter`, `getClientIP` | Shared middleware reduces duplication |
+| 2026-02-08 | Updated `wallet/boost/route.ts` and `sync/route.ts` to use shared middleware | Import from shared module |
+| 2026-02-08 | Deleted unused `src/hooks/use-auth-sync.ts` | Auth sync handled in auth-provider |

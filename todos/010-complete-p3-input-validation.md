@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p3
 issue_id: "010"
 tags: [code-review, security, validation]
@@ -89,3 +89,6 @@ if (!isValidUUID(episodeId)) {
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2024-02-08 | Identified during code review | Defense in depth - validate even if DB will reject |
+| 2026-02-08 | Added UUID validation to `subscribe/route.ts` POST and DELETE | Validate IDs before DB query |
+| 2026-02-08 | Added UUID validation to `progress/route.ts` GET and PUT | Consistent validation across routes |
+| 2026-02-08 | Added message length limit (500 chars) to `wallet/boost/route.ts` | Prevent oversized payloads |

@@ -1,43 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { syncPodcastFromIndex } from "@/lib/podcast-index/sync";
+import { isValidOrigin, createRateLimiter, getClientIP } from "@/lib/api/middleware";
 
-// Simple in-memory rate limiting (per IP)
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT = 10; // requests per window
-const RATE_WINDOW = 60 * 1000; // 1 minute
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const record = rateLimitMap.get(ip);
-
-  if (!record || now > record.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_WINDOW });
-    return false;
-  }
-
-  if (record.count >= RATE_LIMIT) {
-    return true;
-  }
-
-  record.count++;
-  return false;
-}
-
-// Helper to verify origin for CSRF protection
-function isValidOrigin(request: NextRequest): boolean {
-  const origin = request.headers.get("origin");
-  const host = request.headers.get("host");
-
-  if (!origin) return true; // Same-origin requests may not have origin header
-
-  try {
-    const originUrl = new URL(origin);
-    return originUrl.host === host;
-  } catch {
-    return false;
-  }
-}
+// Rate limiter: 10 requests per minute
+const isRateLimited = createRateLimiter(10, 60000);
 
 export async function POST(request: NextRequest) {
   // CSRF protection
@@ -57,7 +24,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Rate limiting
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
+  const ip = getClientIP(request);
   if (isRateLimited(ip)) {
     return NextResponse.json(
       { error: "Too many requests. Please try again later." },

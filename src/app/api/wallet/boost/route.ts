@@ -1,20 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isValidOrigin } from "@/lib/api/middleware";
 
-// Helper to verify origin for CSRF protection
-function isValidOrigin(request: NextRequest): boolean {
-  const origin = request.headers.get("origin");
-  const host = request.headers.get("host");
-
-  if (!origin) return true; // Same-origin requests may not have origin header
-
-  try {
-    const originUrl = new URL(origin);
-    return originUrl.host === host;
-  } catch {
-    return false;
-  }
-}
+const MAX_MESSAGE_LENGTH = 500;
 
 export async function POST(request: NextRequest) {
   // CSRF protection
@@ -43,6 +31,14 @@ export async function POST(request: NextRequest) {
     if (!recipient || typeof recipient !== "string") {
       return NextResponse.json(
         { error: "recipient is required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate message length
+    if (message && (typeof message !== "string" || message.length > MAX_MESSAGE_LENGTH)) {
+      return NextResponse.json(
+        { error: `message must be a string with max ${MAX_MESSAGE_LENGTH} characters` },
         { status: 400 }
       );
     }
