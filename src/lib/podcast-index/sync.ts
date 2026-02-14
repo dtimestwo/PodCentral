@@ -18,35 +18,41 @@ interface SyncResult {
  * Transform podcast data from Podcast Index API format to sync RPC format
  */
 function transformPodcastForSync(podcast: PodcastIndexPodcast) {
-  const categories = Object.keys(podcast.categories || {}).map((key) =>
-    podcast.categories[key].toLowerCase().replace(/\s+/g, "")
-  );
+  // Safely extract categories - API returns object like { "1": "Technology" }
+  const categoriesObj = podcast.categories || {};
+  const categories = Object.keys(categoriesObj).map((key) =>
+    String(categoriesObj[key] || "").toLowerCase().replace(/\s+/g, "")
+  ).filter(Boolean);
+
+  // Safely extract value destinations
+  const destinations = podcast.value?.destinations;
+  const safeDestinations = Array.isArray(destinations) ? destinations : [];
 
   return {
     podcast_index_id: podcast.id,
-    title: podcast.title,
-    author: podcast.author || podcast.ownerName,
-    description: podcast.description,
-    image: podcast.artwork || podcast.image,
+    title: podcast.title || "",
+    author: podcast.author || podcast.ownerName || "",
+    description: podcast.description || "",
+    image: podcast.artwork || podcast.image || "",
     categories,
     locked: podcast.locked === 1,
     medium: "podcast",
     language: podcast.language || "en",
-    episode_count: podcast.episodeCount,
-    feed_url: podcast.url,
-    funding: podcast.funding
+    episode_count: podcast.episodeCount || 0,
+    feed_url: podcast.url || "",
+    funding: podcast.funding?.url
       ? {
           url: podcast.funding.url,
-          message: podcast.funding.message,
+          message: podcast.funding.message || "",
         }
       : null,
-    value: podcast.value
+    value: podcast.value?.model
       ? {
           model: {
-            type: podcast.value.model.type,
-            method: podcast.value.model.method,
+            type: podcast.value.model.type || "lightning",
+            method: podcast.value.model.method || "keysend",
           },
-          destinations: podcast.value.destinations,
+          destinations: safeDestinations,
         }
       : null,
   };
@@ -56,37 +62,46 @@ function transformPodcastForSync(podcast: PodcastIndexPodcast) {
  * Transform episode data from Podcast Index API format to sync RPC format
  */
 function transformEpisodeForSync(episode: PodcastIndexEpisode) {
+  // Safely handle persons array
+  const persons = Array.isArray(episode.persons)
+    ? episode.persons.map((p) => ({
+        name: p.name || "",
+        role: p.role || "guest",
+        group_name: p.group || null,
+        img: p.img || null,
+        href: p.href || null,
+      }))
+    : [];
+
+  // Safely handle soundbites array
+  const soundbites = Array.isArray(episode.soundbites) ? episode.soundbites : [];
+
+  // Safely handle social interact array
+  const socialInteract = Array.isArray(episode.socialInteract)
+    ? episode.socialInteract.map((si) => ({
+        uri: si.url || "",
+        protocol: si.protocol || "activitypub",
+        account_url: si.accountUrl || null,
+      }))
+    : [];
+
   return {
     podcast_index_id: episode.id,
-    title: episode.title,
-    description: episode.description,
-    date_published: new Date(episode.datePublished * 1000).toISOString(),
-    duration: episode.duration,
-    enclosure_url: episode.enclosureUrl,
+    title: episode.title || "",
+    description: episode.description || "",
+    date_published: new Date((episode.datePublished || 0) * 1000).toISOString(),
+    duration: episode.duration || 0,
+    enclosure_url: episode.enclosureUrl || "",
     image: episode.image || null,
-    season: episode.season,
-    episode: episode.episode,
+    season: episode.season || null,
+    episode: episode.episode || null,
     is_trailer: episode.episodeType === "trailer",
-    chapters_url: episode.chaptersUrl,
-    transcript_url: episode.transcriptUrl,
-    persons: episode.persons
-      ? episode.persons.map((p) => ({
-          name: p.name,
-          role: p.role,
-          group_name: p.group || null,
-          img: p.img || null,
-          href: p.href || null,
-        }))
-      : null,
-    soundbite: episode.soundbite,
-    soundbites: episode.soundbites,
-    social_interact: episode.socialInteract
-      ? episode.socialInteract.map((si) => ({
-          uri: si.url,
-          protocol: si.protocol,
-          account_url: si.accountUrl,
-        }))
-      : null,
+    chapters_url: episode.chaptersUrl || null,
+    transcript_url: episode.transcriptUrl || null,
+    persons,
+    soundbite: episode.soundbite || null,
+    soundbites,
+    social_interact: socialInteract,
   };
 }
 
@@ -111,12 +126,25 @@ export async function syncPodcastFromIndex(feedId: number): Promise<SyncResult> 
 
     // 4. Call atomic RPC function for core sync
     const supabase = createAdminClient();
+
+    // Debug: log the data being sent
+    console.log("Sync RPC payload:", {
+      p_podcast_type: typeof podcastData,
+      p_podcast_categories: podcastData.categories,
+      p_podcast_categories_type: typeof podcastData.categories,
+      p_podcast_categories_isArray: Array.isArray(podcastData.categories),
+      p_episodes_type: typeof episodeData,
+      p_episodes_isArray: Array.isArray(episodeData),
+      p_episodes_length: episodeData.length,
+    });
+
     const { data, error } = await supabase.rpc("sync_podcast_from_api", {
       p_podcast: podcastData,
       p_episodes: episodeData,
     });
 
     if (error) {
+      console.error("Sync RPC error:", error);
       return { success: false, error: `Sync failed: ${error.message}` };
     }
 
